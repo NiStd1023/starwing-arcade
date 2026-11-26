@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="30%" r="78%"><stop stop-color="#293b82"/><stop offset=".58" stop-color="#111844"/><stop offset="1" stop-color="#070b24"/></radialGradient>
+    <radialGradient id="halo"><stop stop-color="#84dbff" stop-opacity=".44"/><stop offset="1" stop-color="#864bdf" stop-opacity="0"/></radialGradient>
+    <linearGradient id="wings" x1="0" x2="1" y2="1"><stop stop-color="#6bdcf3"/><stop offset=".48" stop-color="#d7faff"/><stop offset="1" stop-color="#3f72bc"/></linearGradient>
+    <linearGradient id="body" x1="0" x2="1" y2="1"><stop stop-color="#fff"/><stop offset=".48" stop-color="#b4edff"/><stop offset="1" stop-color="#6697ce"/></linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#b6f9ff"/><stop offset=".5" stop-color="#40d2f6"/><stop offset="1" stop-color="#2467ae"/></linearGradient>
+    <linearGradient id="flame" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff3b0"/><stop offset=".48" stop-color="#ff9b69"/><stop offset="1" stop-color="#f466c9" stop-opacity="0"/></linearGradient>
+  </defs>
+  <path fill="url(#bg)" d="M0 0h512v512H0z"/>
+  <circle cx="256" cy="245" r="216" fill="url(#halo)"/>
+  <g fill="#d9f7ff" opacity=".8"><circle cx="90" cy="88" r="3"/><circle cx="405" cy="112" r="3"/><circle cx="92" cy="359" r="2"/><circle cx="426" cy="339" r="2.5"/><circle cx="143" cy="193" r="2"/><circle cx="365" cy="206" r="2"/></g>
+  <path d="M382 61v24m-12-12h24M118 251v18m-9-9h18M383 402v16m-8-8h16" stroke="#8deeff" stroke-width="2" stroke-linecap="round" opacity=".75"/>
+  <path d="M214 307h84l-42 136z" fill="url(#flame)"/>
+  <path d="M227 198l-114 88-8 57 98-24 53 29 53-29 98 24-8-57-114-88z" fill="url(#wings)" stroke="#e3fdff" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M118 293l49-31v48l-54 19zm276 0l-49-31v48l54 19z" fill="#ff80b5"/>
+  <path d="M256 91c-31 27-51 91-51 158v58l18 30h66l18-30v-58c0-67-20-131-51-158z" fill="url(#body)" stroke="#f2ffff" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M256 140c-18 16-25 47-22 77 14 12 30 12 44 0 3-30-4-61-22-77z" fill="url(#glass)" stroke="#e6ffff" stroke-width="4"/>
+  <path d="M236 277h40l-4 28h-32z" fill="#ffbd69"/>
+  <path d="M256 151c-8 12-12 26-12 41" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".7"/>
+</svg>

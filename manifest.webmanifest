@@ -1,0 +1,17 @@
+{
+  "id": "./",
+  "name": "星翼出擊 STARWING",
+  "short_name": "星翼出擊",
+  "description": "駕駛星翼戰機，挑戰太空蜂群的直式街機射擊遊戲。",
+  "lang": "zh-Hant",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#070b24",
+  "theme_color": "#080b25",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
