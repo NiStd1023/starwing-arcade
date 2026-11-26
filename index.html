@@ -12,7 +12,7 @@
   <link rel="apple-touch-icon" href="icon-180.png">
   <meta name="description" content="駕駛星翼戰機迎戰太空蜂群！一款手機與電腦都能玩的復古直式街機射擊遊戲。">
   <title>星翼出擊 STARWING — 直式街機射擊</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=1.2.0">
 </head>
 <body>
   <main class="arcade" id="arcade" aria-label="星翼出擊直式射擊遊戲">
@@ -28,7 +28,7 @@
 
     <div id="hud" class="hud hide" aria-live="off">
       <div><span class="hud-label">SCORE</span><strong id="score">000000</strong></div>
-      <div class="hud-center"><span class="hud-label">STAGE</span><strong id="wave">01</strong></div>
+      <div class="hud-center"><span class="hud-label">STAGE</span><strong id="wave">01</strong><span id="hudDifficulty" class="hud-difficulty">LV.1</span></div>
       <div class="hud-right"><span class="hud-label">LIFE</span><strong id="lives" class="lives">♥ ♥ ♥</strong></div>
     </div>
     <div id="stageMessage" class="stage-message hide"><small>READY FOR TAKEOFF</small><strong>STAGE 01</strong></div>
@@ -42,10 +42,20 @@
       </div>
       <div class="menu-bottom">
         <div class="mission-line"><span>✦</span> THE GALAXY NEEDS YOU <span>✦</span></div>
+        <div class="difficulty-picker" role="group" aria-label="選擇遊戲難易度">
+          <div class="difficulty-title"><span>難易度</span><strong id="difficultyName" aria-live="polite">LV.1 · 原始</strong></div>
+          <div class="difficulty-options">
+            <button type="button" class="difficulty-option" data-difficulty="1" aria-label="第 1 級，原始難度" aria-pressed="true">1</button>
+            <button type="button" class="difficulty-option" data-difficulty="2" aria-label="第 2 級，標準" aria-pressed="false">2</button>
+            <button type="button" class="difficulty-option" data-difficulty="3" aria-label="第 3 級，進階" aria-pressed="false">3</button>
+            <button type="button" class="difficulty-option" data-difficulty="4" aria-label="第 4 級，困難" aria-pressed="false">4</button>
+            <button type="button" class="difficulty-option" data-difficulty="5" aria-label="第 5 級，極限" aria-pressed="false">5</button>
+          </div>
+        </div>
         <button id="startBtn" class="primary-button"><span>開始遊戲</span><i>▶</i></button>
         <div class="control-tips"><span><b>手機</b> 拖曳移動</span><em></em><span><b>電腦</b> 方向鍵 / WASD</span></div>
         <div class="autofire">自動射擊・閃避敵機與子彈</div>
-        <div class="best-line">BEST SCORE <strong id="menuBest">000000</strong></div>
+        <div class="best-line"><span id="bestDifficulty">LV.1</span> BEST SCORE <strong id="menuBest">000000</strong></div>
       </div>
     </section>
 
@@ -58,9 +68,9 @@
       <div class="overlay-card"><div class="overlay-icon">Ⅱ</div><p class="eyebrow single">TAKE A BREATH</p><h2>遊戲暫停</h2><p>準備好，繼續守護銀河！</p><button id="resumeBtn" class="primary-button"><span>繼續遊戲</span><i>▶</i></button><button id="quitBtn" class="text-button">返回主畫面</button></div>
     </section>
     <section id="gameOverScreen" class="screen overlay hide" aria-label="遊戲結束">
-      <div class="overlay-card gameover-card"><div class="overlay-icon">✦</div><p class="eyebrow single">MISSION COMPLETE</p><h2>挑戰結束</h2><p>勇敢的星際飛行員，辛苦了！</p><div class="final-score"><small>YOUR SCORE</small><strong id="finalScore">000000</strong><span>BEST <b id="finalBest">000000</b></span></div><button id="restartBtn" class="primary-button"><span>再次出擊</span><i>↻</i></button><button id="homeBtn" class="text-button">返回主畫面</button></div>
+      <div class="overlay-card gameover-card"><div class="overlay-icon">✦</div><p class="eyebrow single">MISSION COMPLETE</p><h2>挑戰結束</h2><p>勇敢的星際飛行員，辛苦了！</p><div class="final-score"><small>YOUR SCORE · <span id="finalDifficulty">LV.1</span></small><strong id="finalScore">000000</strong><span>BEST <b id="finalBest">000000</b></span></div><button id="restartBtn" class="primary-button"><span>再次出擊</span><i>↻</i></button><button id="homeBtn" class="text-button">返回主畫面</button></div>
     </section>
   </main>
-  <script src="game.js"></script>
+  <script src="game.js?v=1.2.0"></script>
 </body>
 </html>

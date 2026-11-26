@@ -4,15 +4,25 @@
   const ctx = canvas.getContext('2d');
   const W = 480, H = 854;
   const $ = id => document.getElementById(id);
-  const ui = Object.fromEntries(['menu','hud','score','wave','lives','soundBtn','pauseBtn','pauseScreen','gameOverScreen','inGameControls','bombBtn','bombCount','stageMessage','finalScore','finalBest','menuBest'].map(id => [id,$(id)]));
+  const ui = Object.fromEntries(['menu','hud','score','wave','lives','soundBtn','pauseBtn','pauseScreen','gameOverScreen','inGameControls','bombBtn','bombCount','stageMessage','finalScore','finalBest','menuBest','difficultyName','bestDifficulty','hudDifficulty','finalDifficulty'].map(id => [id,$(id)]));
   const clamp = (v,a,b) => Math.max(a,Math.min(b,v));
   const rand = (a,b) => a + Math.random() * (b-a);
   const format = n => Math.floor(n).toString().padStart(6,'0');
   const show = (el, visible) => el.classList.toggle('hide',!visible);
-  const readBest = () => { try { return Math.max(0,Number(localStorage.getItem('starwing-best'))||0); } catch (_) { return 0; } };
-  const writeBest = n => { try { localStorage.setItem('starwing-best',String(n)); } catch (_) {} };
-  let best = readBest();
-  ui.menuBest.textContent = format(best);
+  // Level 1 intentionally retains every original gameplay multiplier.
+  const difficulties = [
+    {name:'原始', bulletSpeed:1, diveInterval:1, diveSpeed:1, extraDivers:0, fireChance:.18, fireCooldown:1, fromWave:2, bossInterval:1, bossSpread:2, bossHealth:0},
+    {name:'標準', bulletSpeed:1.10, diveInterval:.84, diveSpeed:1.07, extraDivers:0, fireChance:.24, fireCooldown:.90, fromWave:1, bossInterval:.90, bossSpread:2, bossHealth:12},
+    {name:'進階', bulletSpeed:1.22, diveInterval:.72, diveSpeed:1.15, extraDivers:1, fireChance:.32, fireCooldown:.80, fromWave:1, bossInterval:.80, bossSpread:3, bossHealth:26},
+    {name:'困難', bulletSpeed:1.35, diveInterval:.61, diveSpeed:1.25, extraDivers:1, fireChance:.42, fireCooldown:.72, fromWave:1, bossInterval:.70, bossSpread:3, bossHealth:42},
+    {name:'極限', bulletSpeed:1.50, diveInterval:.50, diveSpeed:1.35, extraDivers:2, fireChance:.55, fireCooldown:.62, fromWave:1, bossInterval:.60, bossSpread:4, bossHealth:60}
+  ];
+  const bestKey = level => level===1 ? 'starwing-best' : `starwing-best-level-${level}`;
+  const readBest = level => { try { return Math.max(0,Number(localStorage.getItem(bestKey(level)))||0); } catch (_) { return 0; } };
+  const writeBest = (level,n) => { try { localStorage.setItem(bestKey(level),String(n)); } catch (_) {} };
+  const readDifficulty = () => { try { const level=Number(localStorage.getItem('starwing-difficulty')); return Number.isInteger(level)&&level>=1&&level<=5 ? level : 1; } catch (_) { return 1; } };
+  let selectedDifficulty = readDifficulty();
+  let best = readBest(selectedDifficulty);
 
   // Original, browser-synthesized chiptune and arcade effects. No audio files or network required.
   const audio = {
@@ -82,10 +92,19 @@
   bg.onload = () => { const bctx=bgCache.getContext('2d'); bctx.drawImage(bg,0,0,W,H); bgReady=true; };
   bg.src = 'space-bg.png';
   const stars = Array.from({length:105},()=>({x:rand(0,W),y:rand(0,H),r:rand(.4,1.7),speed:rand(10,50),alpha:rand(.18,.9)}));
-  const state = { mode:'menu',time:0,wave:0,score:0,lives:3,bombs:1,power:0,player:null,enemies:[],shots:[],bullets:[],pickups:[],particles:[],texts:[],waveWait:0,diveTimer:0,stageTime:0,shake:0,flash:0,kills:0,pointer:false,keys:new Set(),last:0 };
+  const state = { mode:'menu',difficulty:1,time:0,wave:0,score:0,lives:3,bombs:1,power:0,player:null,enemies:[],shots:[],bullets:[],pickups:[],particles:[],texts:[],waveWait:0,diveTimer:0,stageTime:0,shake:0,flash:0,kills:0,pointer:false,keys:new Set(),last:0 };
 
+  function setDifficulty(level) {
+    if(state.mode!=='menu' || !Number.isInteger(level) || level<1 || level>5) return;
+    selectedDifficulty=level; best=readBest(level);
+    try { localStorage.setItem('starwing-difficulty',String(level)); } catch (_) {}
+    ui.difficultyName.textContent=`LV.${level} · ${difficulties[level-1].name}`;
+    ui.bestDifficulty.textContent=`LV.${level}`;
+    ui.menuBest.textContent=format(best);
+    document.querySelectorAll('.difficulty-option').forEach(button => button.setAttribute('aria-pressed',String(Number(button.dataset.difficulty)===level)));
+  }
   function syncHud() {
-    ui.score.textContent=format(state.score); ui.wave.textContent=String(state.wave).padStart(2,'0');
+    ui.score.textContent=format(state.score); ui.wave.textContent=String(state.wave).padStart(2,'0'); ui.hudDifficulty.textContent=`LV.${state.difficulty}`;
     ui.lives.textContent=state.lives>0 ? '♥ '.repeat(state.lives).trim() : '—';
     ui.bombCount.textContent=String(state.bombs); ui.bombBtn.disabled=state.bombs<=0;
   }
@@ -99,7 +118,7 @@
   function makePlayer() { return {x:W/2,y:700,targetX:W/2,invuln:2.1,fireTimer:0}; }
   function startGame() {
     audio.init(); audio.sfx('start'); audio.begin();
-    Object.assign(state,{time:0,wave:0,score:0,lives:3,bombs:1,power:0,player:makePlayer(),enemies:[],shots:[],bullets:[],pickups:[],particles:[],texts:[],waveWait:0,diveTimer:2.8,stageTime:0,shake:0,flash:0,kills:0,pointer:false});
+    Object.assign(state,{difficulty:selectedDifficulty,time:0,wave:0,score:0,lives:3,bombs:1,power:0,player:makePlayer(),enemies:[],shots:[],bullets:[],pickups:[],particles:[],texts:[],waveWait:0,diveTimer:2.8,stageTime:0,shake:0,flash:0,kills:0,pointer:false});
     state.keys.clear(); setMode('playing'); spawnWave(); syncHud();
   }
   function goHome() {
@@ -112,14 +131,15 @@
   }
   function gameOver() {
     audio.stop(); audio.sfx('over');
-    if(state.score>best) { best=state.score; writeBest(best); }
-    ui.finalScore.textContent=format(state.score); ui.finalBest.textContent=format(best);
+    if(state.score>best) { best=state.score; writeBest(state.difficulty,best); }
+    ui.finalDifficulty.textContent=`LV.${state.difficulty}`; ui.finalScore.textContent=format(state.score); ui.finalBest.textContent=format(best);
     setMode('gameover');
   }
   function spawnWave() {
     state.wave++; state.enemies=[]; state.bullets=[]; state.waveWait=0; state.stageTime=2.3; state.diveTimer=3.1;
     if(state.wave%3===0) {
-      state.enemies.push({boss:true,x:W/2,y:188,homeY:190,hp:34+state.wave*4,maxHp:34+state.wave*4,fire:1.6,t:0,hit:0,r:40});
+      const bossHealth=34+state.wave*4+difficulties[state.difficulty-1].bossHealth;
+      state.enemies.push({boss:true,x:W/2,y:188,homeY:190,hp:bossHealth,maxHp:bossHealth,fire:1.6,t:0,hit:0,r:40});
       ui.stageMessage.querySelector('small').textContent='WARNING · INCOMING BOSS';
       ui.stageMessage.querySelector('strong').textContent='BOSS STAGE';
     } else {
@@ -127,7 +147,7 @@
       const gap=cols===7?56:64, start=(W-(cols-1)*gap)/2;
       for(let row=0;row<rows;row++) for(let col=0;col<cols;col++) {
         const type=row===0?'gold':(row===1?'pink':'blue');
-        state.enemies.push({boss:false,type,homeX:start+col*gap,homeY:177+row*55,x:start+col*gap,y:-50-row*20,hp:type==='gold'?2:1,phase:'enter',delay:(cols-1-col)*.045+row*.14,t:0,fire:rand(1.5,3.8),hit:0,r:17});
+        state.enemies.push({boss:false,type,homeX:start+col*gap,homeY:177+row*55,x:start+col*gap,y:-50-row*20,hp:(type==='gold'?2:1)+((state.difficulty>=4&&type==='gold')||(state.difficulty>=5&&type==='pink')?1:0),phase:'enter',delay:(cols-1-col)*.045+row*.14,t:0,fire:rand(1.5,3.8),hit:0,r:17});
       }
       ui.stageMessage.querySelector('small').textContent='READY FOR TAKEOFF';
       ui.stageMessage.querySelector('strong').textContent='STAGE '+String(state.wave).padStart(2,'0');
@@ -142,7 +162,7 @@
     audio.sfx('shoot');
   }
   function shootAtPlayer(e, spread=0) {
-    const p=state.player, angle=Math.atan2(p.y-e.y,p.x-e.x)+spread, speed=180+Math.min(75,state.wave*9);
+    const p=state.player, angle=Math.atan2(p.y-e.y,p.x-e.x)+spread, speed=(180+Math.min(75,state.wave*9))*difficulties[state.difficulty-1].bulletSpeed;
     state.bullets.push({x:e.x,y:e.y+12,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,r:e.boss?5:4,kind:e.boss?'boss':'normal'});
   }
   function burst(x,y,color,count=10,force=1) {
@@ -177,7 +197,7 @@
     for(let i=state.texts.length-1;i>=0;i--){const t=state.texts[i];t.y-=35*dt;t.life-=dt;if(t.life<=0)state.texts.splice(i,1);}
     state.shake=Math.max(0,state.shake-28*dt); state.flash=Math.max(0,state.flash-dt);
     if(state.mode!=='playing')return;
-    const p=state.player;
+    const p=state.player, difficulty=difficulties[state.difficulty-1];
     if(state.keys.has('ArrowLeft')||state.keys.has('a')||state.keys.has('A')) p.targetX-=390*dt;
     if(state.keys.has('ArrowRight')||state.keys.has('d')||state.keys.has('D')) p.targetX+=390*dt;
     p.targetX=clamp(p.targetX,27,W-27); p.x+=(p.targetX-p.x)*Math.min(1,dt*15); p.invuln=Math.max(0,p.invuln-dt);
@@ -185,24 +205,24 @@
     state.stageTime-=dt; if(state.stageTime<=0)show(ui.stageMessage,false);
     state.diveTimer-=dt;
     const activeDivers=state.enemies.filter(e=>e.phase==='dive').length;
-    if(state.diveTimer<=0 && activeDivers<Math.min(3,1+Math.floor(state.wave/3))) {
+    if(state.diveTimer<=0 && activeDivers<Math.min(3+difficulty.extraDivers,1+Math.floor(state.wave/3)+difficulty.extraDivers)) {
       const choices=state.enemies.filter(e=>e.phase==='formation');
       if(choices.length) { const e=choices[Math.floor(Math.random()*choices.length)]; e.phase='dive'; e.t=0; e.sx=e.x; e.sy=e.y; e.side=Math.random()>.5?1:-1; e.fire=.45; }
-      state.diveTimer=Math.max(.75,2.35-state.wave*.12)*rand(.8,1.25);
+      state.diveTimer=Math.max(.75,2.35-state.wave*.12)*rand(.8,1.25)*difficulty.diveInterval;
     }
     for(const e of state.enemies) {
       e.t+=dt;e.hit=Math.max(0,e.hit-dt);
       if(e.boss) {
         e.x=W/2+Math.sin(e.t*.75)*132;e.y=e.homeY+Math.sin(e.t*1.6)*18;
-        e.fire-=dt;if(e.fire<=0){for(let i=-2;i<=2;i++)shootAtPlayer(e,i*.16); e.fire=Math.max(.8,1.5-state.wave*.03);}
+        e.fire-=dt;if(e.fire<=0){for(let i=-difficulty.bossSpread;i<=difficulty.bossSpread;i++)shootAtPlayer(e,i*.16); e.fire=Math.max(.8,1.5-state.wave*.03)*difficulty.bossInterval;}
       } else if(e.phase==='enter') {
         if(e.t>e.delay) { const a=clamp((e.t-e.delay)/1.1,0,1),ease=1-Math.pow(1-a,3);e.x=e.homeX+(1-ease)*Math.sin(a*Math.PI*2)*75;e.y=-40+(e.homeY+40)*ease;if(a>=1){e.phase='formation';e.t=0;} }
       } else if(e.phase==='formation') {
         e.x=e.homeX+Math.sin(state.time*1.15)*22;e.y=e.homeY+Math.sin(state.time*2+e.homeX*.025)*6;
-        e.fire-=dt;if(e.fire<=0 && state.wave>1 && Math.random()<.18){shootAtPlayer(e);e.fire=rand(3,6);} else if(e.fire<=0)e.fire=rand(1,3);
+        e.fire-=dt;if(e.fire<=0 && state.wave>=difficulty.fromWave && Math.random()<difficulty.fireChance){shootAtPlayer(e);e.fire=rand(3,6)*difficulty.fireCooldown;} else if(e.fire<=0)e.fire=rand(1,3)*difficulty.fireCooldown;
       } else {
-        const u=clamp(e.t/3.15,0,1);e.x=e.sx+e.side*90*Math.sin(u*Math.PI*2)+(p.x-e.sx)*.38*Math.sin(u*Math.PI);e.y=e.sy+(750-e.sy)*Math.sin(u*Math.PI);
-        e.fire-=dt;if(e.fire<=0 && u>.18 && u<.8){shootAtPlayer(e); e.fire=1.1;}
+        const u=clamp(e.t*difficulty.diveSpeed/3.15,0,1);e.x=e.sx+e.side*90*Math.sin(u*Math.PI*2)+(p.x-e.sx)*.38*Math.sin(u*Math.PI);e.y=e.sy+(750-e.sy)*Math.sin(u*Math.PI);
+        e.fire-=dt;if(e.fire<=0 && u>.18 && u<.8){shootAtPlayer(e); e.fire=1.1*difficulty.fireCooldown;}
         if(u>=1){e.phase='formation';e.t=0;e.fire=rand(1,3);}
       }
       if(p.invuln<=0 && Math.hypot(e.x-p.x,e.y-p.y)<e.r+13)hurtPlayer();
@@ -280,7 +300,7 @@
     const halo=ctx.createRadialGradient(W/2,390,5,W/2,390,190);halo.addColorStop(0,'#6799f526');halo.addColorStop(1,'#7392ff00');ctx.fillStyle=halo;ctx.fillRect(20,200,440,370);
     const flight=state.time*.8;
     for(let r=0;r<3;r++)for(let c=0;c<5;c++){const x=92+c*74+Math.sin(flight+r*.7)*10,y=345+r*45+Math.sin(flight*2+c*.8)*5;drawBee(x,y,r===0?'gold':r===1?'pink':'blue',.97,false,Math.sin(flight+c)*.04);}
-    drawPlayer(W/2,510+Math.sin(state.time*2)*5,1.3);
+    if(canvas.getBoundingClientRect().height>620) drawPlayer(W/2,510+Math.sin(state.time*2)*5,1.3);
     // A few glowing shots reinforce that the menu is the actual game world.
     for(let i=0;i<3;i++){const y=430-((state.time*95+i*48)%150);ctx.fillStyle='#fff3a8';ctx.shadowBlur=10;ctx.shadowColor='#ffcc6b';ctx.fillRect(W/2-2,y,4,12);ctx.shadowBlur=0;}
     ctx.restore();
@@ -337,5 +357,6 @@
       navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(registration => registration.update().catch(()=>{})).catch(error => console.warn('Offline support could not start:',error));
     });
   }
-  setMode('menu'); requestAnimationFrame(frame);
+  document.querySelectorAll('.difficulty-option').forEach(button => button.addEventListener('click',() => setDifficulty(Number(button.dataset.difficulty))));
+  setMode('menu'); setDifficulty(selectedDifficulty); requestAnimationFrame(frame);
 })();
