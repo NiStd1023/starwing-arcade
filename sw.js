@@ -1,9 +1,9 @@
 /* Keep cached game files scoped to this installation's URL path. */
 const CACHE_PREFIX = `starwing-${encodeURIComponent(new URL(self.registration.scope).pathname)}-`;
-const CACHE_NAME = `${CACHE_PREFIX}v1.2.0`;
+const CACHE_NAME = `${CACHE_PREFIX}v1.3.0`;
 const CORE_FILES = [
-  './', './index.html', './style.css?v=1.2.0', './game.js?v=1.2.0', './space-bg.png',
-  './manifest.webmanifest', './icon.svg', './icon-180.png', './icon-192.png', './icon-512.png'
+  './', './index.html', './style.css?v=1.3.0', './game.js?v=1.3.0', './space-bg.png',
+  './sprites-ship.png', './sprites-bees.png', './manifest.webmanifest', './icon.svg', './icon-180.png', './icon-192.png', './icon-512.png'
 ];
 
 self.addEventListener('install', event => {

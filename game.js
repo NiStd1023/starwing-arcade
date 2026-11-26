@@ -91,6 +91,23 @@
   const bgCache = document.createElement('canvas'); bgCache.width=W; bgCache.height=H; let bgReady=false;
   bg.onload = () => { const bctx=bgCache.getContext('2d'); bctx.drawImage(bg,0,0,W,H); bgReady=true; };
   bg.src = 'space-bg.png';
+  // Poster-inspired, transparent character artwork; vector rendering below is the fallback.
+  const characterArt = {ship:null, bees:{}};
+  function cacheSprite(image, rect, width=160) {
+    const height=Math.max(1,Math.round(width*rect[3]/rect[2]));
+    const layer=document.createElement('canvas'); layer.width=width; layer.height=height;
+    layer.getContext('2d').drawImage(image,rect[0],rect[1],rect[2],rect[3],0,0,width,height);
+    return layer;
+  }
+  const shipImage=new Image();
+  shipImage.onload=()=>{characterArt.ship=cacheSprite(shipImage,[10,320,920,915]);};
+  shipImage.src='sprites-ship.png';
+  const beeImage=new Image();
+  beeImage.onload=()=>{
+    const cells={gold:[49,90,579,418],pink:[676,92,535,410],blue:[52,698,546,411],boss:[618,612,621,516]};
+    for(const [type,rect] of Object.entries(cells))characterArt.bees[type]=cacheSprite(beeImage,rect);
+  };
+  beeImage.src='sprites-bees.png';
   const stars = Array.from({length:105},()=>({x:rand(0,W),y:rand(0,H),r:rand(.4,1.7),speed:rand(10,50),alpha:rand(.18,.9)}));
   const state = { mode:'menu',difficulty:1,time:0,wave:0,score:0,lives:3,bombs:1,power:0,player:null,enemies:[],shots:[],bullets:[],pickups:[],particles:[],texts:[],waveWait:0,diveTimer:0,stageTime:0,shake:0,flash:0,kills:0,pointer:false,keys:new Set(),last:0 };
 
@@ -261,6 +278,12 @@
   function drawPlayer(x,y,scale=1,inv=false) {
     ctx.save();ctx.translate(x,y);ctx.scale(scale,scale);
     if(inv)ctx.globalAlpha=.4+Math.abs(Math.sin(state.time*20))*.6;
+    if(characterArt.ship) {
+      const flame=ctx.createLinearGradient(0,18,0,53);flame.addColorStop(0,'#fff7bf');flame.addColorStop(.35,'#ffad69');flame.addColorStop(1,'#ff72ce00');
+      ctx.shadowBlur=13;ctx.shadowColor='#ffb86d';path(c=>{c.moveTo(-7,19);c.lineTo(0,48+Math.sin(state.time*24)*4);c.lineTo(7,19);c.closePath();},flame);ctx.shadowBlur=0;
+      const image=characterArt.ship, width=72, height=width*image.height/image.width;
+      ctx.drawImage(image,-width/2,-height/2,width,height);ctx.restore();return;
+    }
     const flame=ctx.createLinearGradient(0,12,0,45);flame.addColorStop(0,'#fff8bc');flame.addColorStop(.35,'#ffb35e');flame.addColorStop(1,'#fa5cce00');
     ctx.shadowBlur=18;ctx.shadowColor='#ff9b76';path(c=>{c.moveTo(-9,13);c.lineTo(0,40+Math.sin(state.time*24)*5);c.lineTo(9,13);c.closePath();},flame);ctx.shadowBlur=0;
     // Fins and body silhouette, drawn as a small hand-inked spacecraft.
@@ -277,6 +300,13 @@
   }
   function drawBee(x,y,type='blue',scale=1,hit=false,tilt=0) {
     ctx.save();ctx.translate(x,y);ctx.rotate(tilt);ctx.scale(scale,scale);
+    const sprite=characterArt.bees[type];
+    if(sprite) {
+      const flap=1+Math.sin(state.time*14+x*.04)*.035;
+      ctx.scale(flap,1);if(hit)ctx.filter='brightness(1.7) saturate(.6)';
+      const width=64,height=width*sprite.height/sprite.width;
+      ctx.drawImage(sprite,-width/2,-height/2,width,height);ctx.restore();return;
+    }
     const colors={blue:['#79e6f6','#338abf','#234c86'],pink:['#ff9cdb','#d256a7','#843c86'],gold:['#fff1a6','#f4a94f','#b86555'],boss:['#ffb4e7','#c35ca9','#70398f']}[type]||['#79e6f6','#338abf','#234c86'];
     const flap=.9+Math.sin(state.time*14+x*.04)*.12;
     ctx.shadowBlur=9;ctx.shadowColor=colors[0];
@@ -307,7 +337,7 @@
   }
   function drawGameplay() {
     for(const e of state.enemies){
-      if(e.boss){drawBee(e.x,e.y,'boss',2.2,e.hit>0,Math.sin(e.t)*.05);ctx.fillStyle='#071126d9';ctx.fillRect(72,143,336,9);ctx.fillStyle='#ff7ebd';ctx.fillRect(74,145,332*Math.max(0,e.hp/e.maxHp),5);ctx.strokeStyle='#ffbfd877';ctx.strokeRect(72,143,336,9);}
+      if(e.boss){drawBee(e.x,e.y+8,'boss',1.9,e.hit>0,Math.sin(e.t)*.05);ctx.fillStyle='#071126d9';ctx.fillRect(72,143,336,9);ctx.fillStyle='#ff7ebd';ctx.fillRect(74,145,332*Math.max(0,e.hp/e.maxHp),5);ctx.strokeStyle='#ffbfd877';ctx.strokeRect(72,143,336,9);}
       else drawBee(e.x,e.y,e.type,1,e.hit>0,e.phase==='dive'?Math.sin(e.t*2)*.18:0);
     }
     for(const s of state.shots){ctx.shadowBlur=12;ctx.shadowColor='#8ceaff';ctx.fillStyle='#a1ecff';ctx.fillRect(s.x-3,s.y-10,6,17);ctx.fillStyle='#fff';ctx.fillRect(s.x-1,s.y-10,2,14);ctx.shadowBlur=0;}

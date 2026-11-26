@@ -33,6 +33,7 @@ python3 -m http.server 8000 --directory dist
 - `style.css`：版面與控制項樣式。
 - `game.js`：遊戲邏輯、操作及原創合成音樂／音效。
 - `space-bg.png`、`icon*.png`、`icon.svg`：背景與安裝圖示。
+- `sprites-ship.png`、`sprites-bees.png`：參考遊戲海報的戰機、三色蜂群與蜂王素材。
 - `manifest.webmanifest`：安裝名稱、圖示與顯示設定。
 - `sw.js`：離線快取。修改遊戲資源後，請同步遞增 `CACHE_NAME` 與 `index.html`、`sw.js` 中的 CSS／JavaScript 版本參數，以確保使用者取得新檔案。
 
