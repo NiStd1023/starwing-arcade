@@ -24,6 +24,29 @@
   let selectedDifficulty = readDifficulty();
   let best = readBest(selectedDifficulty);
 
+  // A 16-bar original arcade theme: the second half answers and develops the opening motif.
+  // Each bar holds eight eighth-notes; null sustains the previous note and 0 is a rest.
+  const musicBars = [
+    {root:48,third:4,lead:[76,null,79,81,79,76,74,null]},
+    {root:43,third:4,lead:[74,0,79,83,86,null,83,81]},
+    {root:45,third:3,lead:[81,null,84,83,81,79,76,null]},
+    {root:41,third:4,lead:[77,0,81,84,81,79,77,74]},
+    {root:48,third:4,lead:[76,null,79,81,79,76,72,76]},
+    {root:43,third:4,lead:[74,null,78,79,83,null,81,79]},
+    {root:41,third:4,lead:[81,79,77,76,77,null,79,81]},
+    {root:43,third:4,lead:[79,null,78,76,74,null,0,74]},
+    {root:45,third:3,lead:[81,null,84,83,81,79,76,0]},
+    {root:40,third:3,lead:[79,null,83,86,88,null,86,83]},
+    {root:41,third:4,lead:[81,null,84,86,84,81,77,0]},
+    {root:48,third:4,lead:[79,76,79,84,83,null,79,76]},
+    {root:38,third:3,lead:[77,null,81,86,84,81,77,74]},
+    {root:43,third:4,lead:[71,null,74,79,83,null,81,79]},
+    {root:48,third:4,lead:[76,79,84,88,86,84,83,79]},
+    {root:43,third:4,lead:[83,81,79,77,74,null,79,null]}
+  ];
+  const musicStep = 60 / 148 / 2;
+  const pitch = midi => 440 * Math.pow(2,(midi-69)/12);
+
   // Original, browser-synthesized chiptune and arcade effects. No audio files or network required.
   const audio = {
     ctx:null, master:null, music:null, effects:null, timer:null, next:0, step:0, playing:false, muted:false,
@@ -45,8 +68,21 @@
       } catch (_) {}
     },
     setMuted(value) { this.muted = value; if(this.master&&this.ctx) this.master.gain.setTargetAtTime(value ? 0 : .55,this.ctx.currentTime,.03); },
-    begin() { this.init(); this.playing = true; if(this.ctx) this.next = this.ctx.currentTime + .06; },
-    stop() { this.playing = false; },
+    begin() {
+      this.init(); this.playing = true;
+      if(this.ctx) {
+        this.next = this.ctx.currentTime + .06;
+        this.music.gain.cancelScheduledValues(this.ctx.currentTime);
+        this.music.gain.setTargetAtTime(.48,this.ctx.currentTime,.025);
+      }
+    },
+    stop() {
+      this.playing = false;
+      if(this.ctx && this.music) {
+        this.music.gain.cancelScheduledValues(this.ctx.currentTime);
+        this.music.gain.setTargetAtTime(.0001,this.ctx.currentTime,.025);
+      }
+    },
     note(freq, time, dur, type, vol, bus, endFreq) {
       if (!this.ctx || !freq) return;
       try {
@@ -55,6 +91,19 @@
         if(endFreq) o.frequency.exponentialRampToValueAtTime(Math.max(20,endFreq),time+dur);
         g.gain.setValueAtTime(.0001,time); g.gain.exponentialRampToValueAtTime(Math.max(.0002,vol),time+.008); g.gain.exponentialRampToValueAtTime(.0001,time+dur);
         o.connect(g); g.connect(bus); o.start(time); o.stop(time+dur+.01);
+      } catch (_) {}
+    },
+    musicNote(midi, time, dur, type, vol) {
+      if(!this.ctx || !midi) return;
+      try {
+        const o=this.ctx.createOscillator(), g=this.ctx.createGain();
+        const attack=Math.min(.009,dur*.2), release=Math.min(.045,dur*.35);
+        o.type=type; o.frequency.setValueAtTime(pitch(midi),time);
+        g.gain.setValueAtTime(.0001,time);
+        g.gain.linearRampToValueAtTime(vol,time+attack);
+        g.gain.linearRampToValueAtTime(vol*.76,time+dur-release);
+        g.gain.exponentialRampToValueAtTime(.0001,time+dur);
+        o.connect(g); g.connect(this.music); o.start(time); o.stop(time+dur+.01);
       } catch (_) {}
     },
     sfx(kind) {
@@ -72,17 +121,27 @@
     schedule() {
       if(!this.ctx || !this.playing || this.ctx.state!=='running') return;
       if(this.next < this.ctx.currentTime-.2) this.next=this.ctx.currentTime+.03;
-      // Two-bar melody, with a contrasting second phrase; 150 BPM.
-      const melody=[659,0,784,0,880,0,784,659, 587,0,659,0,784,0,659,587, 523,0,659,0,784,0,880,0, 988,880,784,659,587,0,659,0,
-                    659,0,784,0,880,0,988,880, 784,0,659,0,587,0,659,784, 880,0,784,0,659,0,587,0, 523,659,784,659,587,0,523,0];
-      const bass=[110,110,130.81,130.81,146.83,146.83,98,98];
       while(this.next < this.ctx.currentTime+.16) {
-        const s=this.step%64, t=this.next;
-        if(melody[s]) this.note(melody[s],t,.12,'square',.047,this.music);
-        if(s%4===0) { this.note(bass[Math.floor(s/8)],t,.19,'triangle',.095,this.music); this.note(85,t,.10,'sine',.12,this.music,42); }
-        if(s%8===4) this.note(170,t,.055,'square',.025,this.music,80);
-        if(s%2===0) this.note(4800,t,.025,'triangle',.008,this.music,2000);
-        this.step++; this.next+=.10;
+        const position=this.step%(musicBars.length*8), beat=position%8, bar=musicBars[Math.floor(position/8)], t=this.next;
+        const lead=bar.lead[beat];
+        if(lead) {
+          let length=1;
+          while(beat+length<8 && bar.lead[beat+length]===null) length++;
+          const duration=musicStep*length*.90;
+          this.musicNote(lead,t,duration,'triangle',.075);
+          this.musicNote(lead,t,duration,'square',.016);
+        }
+        if(beat%2===0) {
+          const bass=[bar.root,bar.root+7,bar.root,bar.root+bar.third][beat/2];
+          this.musicNote(bass,t,musicStep*1.65,'triangle',.085);
+        }
+        const chord=[bar.root+12,bar.root+12+bar.third,bar.root+19];
+        if(beat===1 || beat===5) chord.forEach(n=>this.musicNote(n,t,musicStep*1.12,'triangle',.016));
+        if(beat===3 || beat===7) this.musicNote(chord[(Math.floor(position/8)+beat)%3]+12,t,musicStep*.7,'sine',.014);
+        if(beat===0 || beat===4) this.note(100,t,.10,'sine',.09,this.music,45);
+        if(beat===2 || beat===6) this.note(180,t,.055,'triangle',.035,this.music,85);
+        if(beat%2===1) this.note(3100,t,.025,'triangle',.006,this.music,1900);
+        this.step++; this.next+=musicStep;
       }
     }
   };
