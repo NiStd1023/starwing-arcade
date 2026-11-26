@@ -8,7 +8,7 @@
 - 手機：在遊戲畫面左右拖曳。
 - 電腦：使用 ←、→ 或 A、D 移動；戰機自動射擊。
 - 點選右下角 BOMB，或按 B／X 使用炸彈。每三關有頭目。
-- 拾取 P 強化火力、B 補充炸彈、H 回復生命。右上角可暫停及切換音樂／音效。
+- 拾取金色星星罐強化火力、藍色箭頭罐補充炸彈、粉紅愛心罐回復生命。右上角可暫停及切換音樂／音效。
 - 各難度最高分分開記錄，只儲存在目前瀏覽器或已安裝的遊戲中；第 1 級保留原有最高分。清除瀏覽器資料可能刪除紀錄。
 
 ## 安裝及離線遊玩
@@ -33,7 +33,7 @@ python3 -m http.server 8000 --directory dist
 - `style.css`：版面與控制項樣式。
 - `game.js`：遊戲邏輯、操作及原創合成音樂／音效。
 - `space-bg.png`、`icon*.png`、`icon.svg`：背景與安裝圖示。
-- `sprites-ship.png`、`sprites-bees.png`：參考遊戲海報的戰機、三色蜂群與蜂王素材。
+- `sprites-ship.png`、`sprites-bees.png`、`sprites-bee-bodies.png`、`sprites-powerups.png`：戰機、分層拍翅蜂群與海報風格能量罐素材。
 - `manifest.webmanifest`：安裝名稱、圖示與顯示設定。
 - `sw.js`：離線快取。修改遊戲資源後，請同步遞增 `CACHE_NAME` 與 `index.html`、`sw.js` 中的 CSS／JavaScript 版本參數，以確保使用者取得新檔案。
 
